@@ -1,0 +1,26 @@
+# Environment variables & secrets
+.env
+*.env
+!.env.example
+
+# Python virtual environment & cache
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# SQLite Database & journals
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+!data/.gitkeep
+
+# IDEs & OS metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

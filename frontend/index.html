@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Chatbot - Production LLM Assistant</title>
+  <meta name="description" content="Production-ready AI Chatbot powered by FastAPI, SQLite, and OpenAI LLM API." />
+
+  <!-- Modern Typography (Inter Font) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+
+  <!-- Highlight.js Code Highlighting Theme (Dark) -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark-dimmed.min.css" />
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app-layout" id="appLayout">
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+    <!-- ==================================================================== -->
+    <!-- SIDEBAR: History & Navigation                                        -->
+    <!-- ==================================================================== -->
+    <aside class="sidebar" id="sidebar" aria-label="Chat History and Settings">
+      <!-- App Brand Header -->
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M12 2a8 8 0 0 0-8 8c0 3.3 2 6.1 4.9 7.3L8 22l4.8-2.4c.4 0 .8.1 1.2.1a8 8 0 0 0 8-8 8 8 0 0 0-8-8z" />
+              <path d="M9 10h.01" />
+              <path d="M15 10h.01" />
+              <path d="M9.5 14a3.5 3.5 0 0 0 5 0" />
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">AI Chatbot</span>
+            <span class="brand-badge">FastAPI</span>
+          </div>
+        </div>
+        <!-- Close button for mobile drawer -->
+        <button class="icon-btn mobile-close-btn" id="closeSidebarBtn" title="Close Sidebar" aria-label="Close sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- New Chat Button -->
+      <div class="sidebar-action">
+        <button class="btn btn-new-chat" id="newChatBtn" title="Start a new chat (Ctrl+K)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New Chat</span>
+          <kbd class="shortcut-badge">Ctrl K</kbd>
+        </button>
+      </div>
+
+      <!-- Conversation History List -->
+      <div class="sidebar-history-container" id="historyContainer" role="navigation" aria-label="Previous chats">
+        <div class="history-loading" id="historyLoading">Loading conversations...</div>
+        <div class="history-empty" id="historyEmpty" style="display: none;">No previous conversations yet.</div>
+        <div class="history-groups" id="historyGroups">
+          <!-- Dynamically populated grouped chat items -->
+        </div>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="model-status-pill" id="sidebarModelPill" title="Active Model">
+          <span class="status-indicator" id="statusDot"></span>
+          <span class="model-name" id="sidebarModelName">gpt-4o-mini</span>
+        </div>
+        <button class="btn btn-secondary btn-settings" id="openSettingsBtn" title="Open Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ==================================================================== -->
+    <!-- MAIN CHAT CONTAINER                                                  -->
+    <!-- ==================================================================== -->
+    <main class="chat-area" id="chatArea" role="main">
+
+      <!-- Top Navigation Header -->
+      <header class="chat-header">
+        <div class="header-left">
+          <button class="icon-btn mobile-menu-btn" id="openSidebarBtn" title="Toggle chat history"
+            aria-label="Toggle chat history">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="active-chat-info">
+            <h1 class="chat-title" id="currentChatTitle">New Chat</h1>
+            <span class="chat-subtitle" id="chatSubtitle">OpenAI LLM Integration</span>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Clear Conversation Button -->
+          <button class="icon-btn" id="clearChatBtn" title="Clear messages in current chat" aria-label="Clear chat">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+          <!-- Quick Settings Button -->
+          <button class="icon-btn" id="headerSettingsBtn" title="Chatbot settings" aria-label="Chatbot settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- API Key Notice Banner (Shown dynamically if unconfigured) -->
+      <div class="api-notice-banner" id="apiNoticeBanner" style="display: none;">
+        <div class="api-notice-content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <div class="api-notice-text">
+            <strong>OpenAI API Key Not Detected:</strong>
+            Add your key to the <code>.env</code> file in the project folder to enable live AI responses.
+          </div>
+        </div>
+        <button class="icon-btn-sm" id="dismissBannerBtn" title="Dismiss notice">✕</button>
+      </div>
+
+      <!-- Messages Scroll Area -->
+      <div class="messages-container" id="messagesContainer">
+
+        <!-- Empty State Hero (Visible when no messages in active chat) -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon-glow">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+            </svg>
+          </div>
+          <h2 class="empty-title">How can I help you today?</h2>
+          <p class="empty-desc">Ask anything or explore one of the sample prompt cards below:</p>
+
+          <!-- Suggested Prompt Cards -->
+          <div class="suggestion-grid">
+            <button class="suggestion-card"
+              data-prompt="Explain Python decorators with clear examples and why they are useful.">
+              <div class="suggestion-header">
+                <span class="suggestion-emoji">🐍</span>
+                <span class="suggestion-label">Python Decorators</span>
+              </div>
+              <p class="suggestion-text">"Explain Python decorators with code examples and how function wrappers work."
+              </p>
+            </button>
+
+            <button class="suggestion-card"
+              data-prompt="Explain how Large Language Models (LLMs) work under the hood, from tokens to transformer attention.">
+              <div class="suggestion-header">
+                <span class="suggestion-emoji">🧠</span>
+                <span class="suggestion-label">How LLMs Work</span>
+              </div>
+              <p class="suggestion-text">"Explain tokens, embeddings, and transformer attention mechanisms simply."</p>
+            </button>
+
+            <button class="suggestion-card"
+              data-prompt="Help me debug a Python issue: I have a memory leak and slow dictionary lookups. How do I profile it?">
+              <div class="suggestion-header">
+                <span class="suggestion-emoji">🔍</span>
+                <span class="suggestion-label">Debug Python Code</span>
+              </div>
+              <p class="suggestion-text">"Help me identify memory leaks, optimize lookups, and profile bottlenecks."</p>
+            </button>
+
+            <button class="suggestion-card"
+              data-prompt="Create a comprehensive 4-week study plan to become proficient in Python AI engineering and LLM development.">
+              <div class="suggestion-header">
+                <span class="suggestion-emoji">📋</span>
+                <span class="suggestion-label">AI Study Plan</span>
+              </div>
+              <p class="suggestion-text">"Create a 4-week structured roadmap to master AI engineering & FastAPI."</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Messages Stream -->
+        <div class="messages-list" id="messagesList">
+          <!-- Dynamically populated message cards -->
+        </div>
+
+        <!-- Scroll-To-Bottom Floating Button -->
+        <button class="scroll-bottom-btn" id="scrollBottomBtn" title="Scroll to bottom" aria-label="Scroll to bottom">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+
+      </div>
+
+      <!-- ==================================================================== -->
+      <!-- INPUT BAR AREA                                                       -->
+      <!-- ==================================================================== -->
+      <footer class="input-area">
+        <div class="input-box-wrapper">
+          <!-- Textarea container -->
+          <div class="input-container">
+            <textarea id="messageInput" class="message-textarea" placeholder="Message AI..." rows="1" maxlength="32000"
+              aria-label="Type your message"></textarea>
+
+            <!-- Send / Stop button -->
+            <button class="action-btn send-btn" id="sendBtn" title="Send message (Enter)" aria-label="Send message">
+              <!-- Up arrow SVG for sending -->
+              <svg class="send-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"></line>
+                <polyline points="5 12 12 5 19 12"></polyline>
+              </svg>
+              <!-- Stop square SVG for canceling generation -->
+              <svg class="stop-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+              </svg>
+            </button>
+          </div>
+
+          <div class="input-disclaimer">
+            <span>AI can make mistakes. Verify important information. Press <kbd>Enter</kbd> to send, <kbd>Shift +
+                Enter</kbd> for new line.</span>
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- MODALS: Settings & Confirmations                                    -->
+  <!-- ==================================================================== -->
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal" aria-hidden="true" role="dialog" aria-modal="true"
+    aria-labelledby="settingsModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="settingsModalTitle">Chatbot Settings</h3>
+        <button class="icon-btn-sm" id="closeSettingsBtn" title="Close settings" aria-label="Close settings">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Model Selection -->
+        <div class="form-group">
+          <label for="modelSelect" class="form-label">AI Model</label>
+          <select id="modelSelect" class="form-select">
+            <option value="gemini-3.5-flash-lite" selected>Gemini 3.5 Flash Lite (Ultra Fast ⚡)</option>
+            <option value="gemini-3.5-flash">Gemini 3.5 Flash (Fast & Capable)</option>
+            <option value="gemini-3.8-flash">Gemini 3.8 Flash (Flagship)</option>
+          </select>
+          <span class="form-hint">Selected model will be used for subsequent completions.</span>
+        </div>
+
+        <!-- System Prompt / Persona -->
+        <div class="form-group">
+          <div class="label-with-action">
+            <label for="systemPromptInput" class="form-label">System Prompt (AI Personality)</label>
+            <button type="button" class="text-link-btn" id="resetPromptBtn">Reset to Default</button>
+          </div>
+          <textarea id="systemPromptInput" class="form-textarea" rows="5"
+            placeholder="Describe how the assistant should behave..."></textarea>
+          <span class="form-hint">Guides the tone, structure, and guidelines followed by the AI.</span>
+        </div>
+
+        <!-- Temperature Slider -->
+        <div class="form-group">
+          <div class="label-with-value">
+            <label for="temperatureSlider" class="form-label">Temperature (Creativity)</label>
+            <span class="slider-badge" id="temperatureValue">0.7</span>
+          </div>
+          <input type="range" id="temperatureSlider" class="form-range" min="0.0" max="1.5" step="0.1" value="0.7" />
+          <div class="slider-labels">
+            <span>0.0 (Precise & Factual)</span>
+            <span>0.7 (Balanced)</span>
+            <span>1.5 (Creative)</span>
+          </div>
+        </div>
+
+        <!-- Max Tokens Slider -->
+        <div class="form-group">
+          <div class="label-with-value">
+            <label for="maxTokensSlider" class="form-label">Maximum Response Length</label>
+            <span class="slider-badge" id="maxTokensValue">2048</span>
+          </div>
+          <input type="range" id="maxTokensSlider" class="form-range" min="256" max="4096" step="128" value="2048" />
+          <div class="slider-labels">
+            <span>256 tokens</span>
+            <span>2048 tokens</span>
+            <span>4096 tokens</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelSettingsBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveSettingsBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal" aria-hidden="true" role="dialog" aria-modal="true"
+    aria-labelledby="deleteModalTitle">
+    <div class="modal-card modal-card-sm">
+      <div class="modal-header">
+        <h3 class="modal-title" id="deleteModalTitle">Delete Conversation?</h3>
+        <button class="icon-btn-sm" id="closeDeleteModalBtn" title="Close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text">Are you sure you want to delete <strong id="deleteTargetTitle">this conversation</strong>?
+          This will permanently remove its message history from the database.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelDeleteBtn">Cancel</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clear Confirmation Modal -->
+  <div class="modal-overlay" id="clearModal" aria-hidden="true" role="dialog" aria-modal="true"
+    aria-labelledby="clearModalTitle">
+    <div class="modal-card modal-card-sm">
+      <div class="modal-header">
+        <h3 class="modal-title" id="clearModalTitle">Clear Chat Messages?</h3>
+        <button class="icon-btn-sm" id="closeClearModalBtn" title="Close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-text">Are you sure you want to clear all messages in this conversation? The conversation
+          container will remain, but all message history will be emptied.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelClearBtn">Cancel</button>
+        <button class="btn btn-danger" id="confirmClearBtn">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Markdown & Syntax Highlighting Libraries (Loaded via CDN with fallback protection) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.9/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+
+  <!-- Main Application Logic -->
+  <script src="app.js"></script>
+</body>
+
+</html>
